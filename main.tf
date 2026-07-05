@@ -120,9 +120,9 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_eip" "hashicat" {
-  count = var.ec2_count
+  count    = var.ec2_count
   instance = aws_instance.hashicat[count.index].id
-  vpc      = true
+  domain   = "vpc"
 }
 
 resource "aws_eip_association" "hashicat" {
