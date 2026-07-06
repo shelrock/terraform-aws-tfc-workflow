@@ -69,6 +69,13 @@ resource "aws_security_group" "hashicat" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+    ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
   egress {
     from_port       = 0
     to_port         = 0
@@ -76,6 +83,7 @@ resource "aws_security_group" "hashicat" {
     cidr_blocks     = ["0.0.0.0/0"]
     prefix_list_ids = []
   }
+
 
   tags = {
     Name = "${var.prefix}-security-group"
@@ -120,19 +128,16 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_eip" "hashicat" {
-  count    = var.ec2_count
-  instance = aws_instance.hashicat[count.index].id
+  instance = aws_instance.hashicat.id
   domain   = "vpc"
 }
 
 resource "aws_eip_association" "hashicat" {
-  count         = var.ec2_count
-  instance_id   = aws_instance.hashicat[count.index].id
-  allocation_id = aws_eip.hashicat[count.index].id
+  instance_id   = aws_instance.hashicat.id
+  allocation_id = aws_eip.hashicat.id
 }
 
 resource "aws_instance" "hashicat" {
-  count                       = var.ec2_count
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   key_name                    = aws_key_pair.hashicat.key_name
@@ -159,7 +164,6 @@ resource "aws_instance" "hashicat" {
 # Run the deploy_app.sh script.
 resource "null_resource" "configure-cat-app" {
   depends_on = [aws_eip_association.hashicat]
-  count      = var.ec2_count
 
   // triggers = {
   //   build_number = timestamp()
@@ -173,8 +177,8 @@ resource "null_resource" "configure-cat-app" {
       type        = "ssh"
       user        = "ubuntu"
       private_key = tls_private_key.hashicat.private_key_pem
-      host        = aws_eip.hashicat[count.index].public_ip
-    }
+      host        = aws_eip.hashicat.public_ip
+      }
   }
 
   provisioner "remote-exec" {
@@ -195,8 +199,8 @@ resource "null_resource" "configure-cat-app" {
       type        = "ssh"
       user        = "ubuntu"
       private_key = tls_private_key.hashicat.private_key_pem
-      host        = aws_eip.hashicat[count.index].public_ip
-    }
+      host        = aws_eip.hashicat.public_ip
+      }
   }
 }
 
